@@ -4,6 +4,7 @@ import os
 import imghdr
 import csv
 import argparse
+import ujson
 
 from flask import Flask, redirect, url_for, request
 from flask import render_template
@@ -23,9 +24,12 @@ def tagger():
     labels = app.config["LABELS"]
     not_end = not(app.config["HEAD"] == len(app.config["FILES"]) - 1)
     not_start = not (app.config["HEAD"] == 0)
+    grount_truth_label = app.config["IMAGE_SETTINGS"]['ground_truth'][image]
 
     already_has_labels = len(labels) > 0
-    return render_template('tagger.html', not_end=not_end, has_label=already_has_labels, not_start=not_start, directory=directory, image=image, labels=labels, head=app.config["HEAD"] + 1, len=len(app.config["FILES"]))
+    return render_template('tagger.html', not_end=not_end, has_label=already_has_labels, 
+        not_start=not_start, directory=directory, image=image, labels=labels, head=app.config["HEAD"] + 1, 
+        len=len(app.config["FILES"]), gt_label=grount_truth_label)
 
 @app.route('/next')
 def next():
@@ -170,19 +174,23 @@ if __name__ == "__main__":
         exit()
     app.config["FILES"] = files
 
-    if args.config is not None:
-        config_setting = read_pre_label_files(args.config)
-        inflated_configs = {} # expand config setting
+    # if args.config is not None:
+    config_setting = read_pre_label_files(args.config)
+    inflated_configs = {} # expand config setting
 
-        for key, val in config_setting.items():
-            if key == 'ground_truth': # reserved keyword
-                with open(config_setting[key], mode='r') as infile:
-                    reader = csv.reader(infile)
-                    ground_truth_labels_dict = {rows[0]:rows[1] for rows in reader}
-                inflated_configs[key] = ground_truth_labels_dict
-            else: # everything else is expected to be df
-                temp_df = pd.read_csv(config_setting[key])
-                inflated_configs[key] = temp_df
+    for key, val in config_setting.items():
+        if key == 'ground_truth': # reserved keyword
+            with open(config_setting[key], mode='r') as infile:
+                reader = csv.reader(infile)
+                ground_truth_labels_dict = {rows[0]:rows[1] for rows in reader}
+            inflated_configs[key] = ground_truth_labels_dict
+        else: # everything else is expected to be json
+            with open(config_setting[key], 'r') as fp:
+                inflated_configs[key] = ujson.loads(fp.read()) 
+            # temp_df = pd.read_csv(config_setting[key]) # old df setting
+            # inflated_configs[key] = temp_df
+    
+    app.config["IMAGE_SETTINGS"] = inflated_configs
     
     if args.out == None:
         app.config["OUT"] = "out.csv"

@@ -1,3 +1,5 @@
 *.csv
+*.json
+*.txt
 annotate/
 uploaded_images/
