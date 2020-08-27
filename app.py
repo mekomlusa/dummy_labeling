@@ -25,11 +25,15 @@ def tagger():
     not_end = not(app.config["HEAD"] == len(app.config["FILES"]) - 1)
     not_start = not (app.config["HEAD"] == 0)
     grount_truth_label = app.config["IMAGE_SETTINGS"]['ground_truth'][image]
+    available_labels = set(app.config["IMAGE_SETTINGS"].keys())
+    available_labels.remove('ground_truth')
+    available_labels.add('confirmed')
 
     already_has_labels = len(labels) > 0
     return render_template('tagger.html', not_end=not_end, has_label=already_has_labels, 
         not_start=not_start, directory=directory, image=image, labels=labels, head=app.config["HEAD"] + 1, 
-        len=len(app.config["FILES"]), gt_label=grount_truth_label)
+        len=len(app.config["FILES"]), gt_label=grount_truth_label, preset_labels=available_labels,
+        selected_label_method=app.config['SELECTED_LABEL_ENGINE'])
 
 @app.route('/next')
 def next():
@@ -99,6 +103,15 @@ def modify():
 
     labels_without_this_image = labels_without_this_image.sort_values(by=['id', 'image'], ascending=[True, False])
     labels_without_this_image.to_csv(app.config["OUT"], index=False)
+
+    return redirect(url_for('tagger'))
+
+@app.route("/selected_label_method", methods=['POST', 'GET'])
+def selected_label_method():
+    if request.method == "POST":            
+        selected_val = request.form['labelset']
+    
+    app.config['SELECTED_LABEL_ENGINE'] = selected_val
 
     return redirect(url_for('tagger'))
 
@@ -191,6 +204,7 @@ if __name__ == "__main__":
             # inflated_configs[key] = temp_df
     
     app.config["IMAGE_SETTINGS"] = inflated_configs
+    app.config['SELECTED_LABEL_ENGINE'] = 'confirmed'
     
     if args.out == None:
         app.config["OUT"] = "out.csv"

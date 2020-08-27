@@ -24,10 +24,22 @@
         function submitButtonStyle(id, color) {
             var elem = document.getElementById(id);
             elem.style.background = color;
-        }
+        }  
         </script>
         <div class="panel-body">
           <p>Ground truth label: {{ gt_label }}</p>
+          <label for="labelset">Choose a label engine:</label>
+          <form action= "{{ url_for('selected_label_method') }}" method="POST">
+            <select name="labelset" id="labelset" onchange='this.form.submit()'>
+              {% for item in preset_labels %}
+                {% if selected_label_method == item %}
+                <option value="{{ item }}" selected='selected'>{{item}}</option>
+                {% else %}
+                <option value="{{ item }}">{{item}}</option>
+                {% endif %}
+              {% endfor %}
+            </select>
+          </form>
             <div class="list-group">
               {% for label in labels %}
                 <div class="list-group-item">
