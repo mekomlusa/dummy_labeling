@@ -21,6 +21,9 @@ def tagger():
         return redirect(url_for('bye'))
     directory = app.config['IMAGES']
     image = app.config["FILES"][app.config["HEAD"]]
+
+    render_saved_labels(app.config['SELECTED_LABEL_ENGINE'])
+
     labels = app.config["LABELS"]
     not_end = not(app.config["HEAD"] == len(app.config["FILES"]) - 1)
     not_start = not (app.config["HEAD"] == 0)
@@ -40,18 +43,18 @@ def next():
     # load next image & existing labels
     app.config["HEAD"] = app.config["HEAD"] + 1
 
-    image = app.config["FILES"][app.config["HEAD"]]
+    # image = app.config["FILES"][app.config["HEAD"]]
 
-    saved_output = pd.read_csv(app.config["OUT"])
-    past_labels = saved_output[saved_output['image'] == image]
+    # saved_output = pd.read_csv(app.config["OUT"])
+    # past_labels = saved_output[saved_output['image'] == image]
 
-    if len(past_labels) > 0:
-        app.config["LABELS"] = []
-        for index, row in past_labels.iterrows():
-            app.config["LABELS"].append({"id": str(row['id']), "name": str(row['name']), "xMin": str(row['xMin']),
-                                         "xMax": str(row['xMax']), "yMin": str(row['yMin']), "yMax": str(row['yMax'])})
-    else:
-        app.config["LABELS"] = []
+    # if len(past_labels) > 0:
+    #     app.config["LABELS"] = []
+    #     for index, row in past_labels.iterrows():
+    #         app.config["LABELS"].append({"id": str(row['id']), "name": str(row['name']), "xMin": str(row['xMin']),
+    #                                      "xMax": str(row['xMax']), "yMin": str(row['yMin']), "yMax": str(row['yMax'])})
+    # else:
+    #     app.config["LABELS"] = []
 
     return redirect(url_for('tagger'))
 
@@ -59,16 +62,16 @@ def next():
 def prev():
     app.config["HEAD"] = app.config["HEAD"] - 1
 
-    app.config["LABELS"] = [] # clear existing labels
+    #app.config["LABELS"] = [] # clear existing labels
 
     # restore labels
-    image = app.config["FILES"][app.config["HEAD"]]
-    saved_output = pd.read_csv(app.config["OUT"])
-    past_labels = saved_output[saved_output['image'] == image]
-    if len(past_labels) > 0:
-        for index, row in past_labels.iterrows():
-            app.config["LABELS"].append({"id": str(row['id']), "name": str(row['name']), "xMin": str(row['xMin']),
-                                         "xMax": str(row['xMax']), "yMin": str(row['yMin']), "yMax": str(row['yMax'])})
+    # image = app.config["FILES"][app.config["HEAD"]]
+    # saved_output = pd.read_csv(app.config["OUT"])
+    # past_labels = saved_output[saved_output['image'] == image]
+    # if len(past_labels) > 0:
+    #     for index, row in past_labels.iterrows():
+    #         app.config["LABELS"].append({"id": str(row['id']), "name": str(row['name']), "xMin": str(row['xMin']),
+    #                                      "xMax": str(row['xMax']), "yMin": str(row['yMin']), "yMax": str(row['yMax'])})
     return redirect(url_for('tagger'))
 
 # newly saved route
@@ -145,6 +148,7 @@ def images(f):
     images = app.config['IMAGES']
     return send_file(images + f)
 
+# non app route methods
 def read_pre_label_files(config_path):
     res_dict = {}
 
@@ -157,6 +161,29 @@ def read_pre_label_files(config_path):
             res_dict[key] = val
 
     return res_dict
+
+def render_saved_labels(choice):
+    image = app.config["FILES"][app.config["HEAD"]]
+    app.config["LABELS"] = []
+
+    if choice == 'confirmed':
+        saved_output = pd.read_csv(app.config["OUT"])
+        past_labels = saved_output[saved_output['image'] == image]
+        if len(past_labels) > 0:
+            for index, row in past_labels.iterrows():
+                app.config["LABELS"].append({"id": str(row['id']), "name": str(row['name']), "xMin": str(row['xMin']),
+                                            "xMax": str(row['xMax']), "yMin": str(row['yMin']), "yMax": str(row['yMax'])})
+    else: # tested for tf-hub OD API output. See accompanied notebook for more info. Adapted for your case.
+        preset_labels = app.config["IMAGE_SETTINGS"][choice]
+        if image in preset_labels:
+            past_labels = preset_labels[image]
+            for i in range(len(past_labels['detection_class_entities'])):
+                xMin = str(past_labels['detection_boxes'][i][1] * past_labels['image_size'][0])
+                xMax = str(past_labels['detection_boxes'][i][3] * past_labels['image_size'][0]) 
+                yMin = str(past_labels['detection_boxes'][i][0] * past_labels['image_size'][1]) 
+                yMax = str(past_labels['detection_boxes'][i][2] * past_labels['image_size'][1])
+                app.config["LABELS"].append({"id": str(i+1), "name": past_labels['detection_class_entities'][i], "xMin": xMin,
+                                            "xMax": xMax, "yMin": yMin, "yMax": yMax})
 
 
 if __name__ == "__main__":
