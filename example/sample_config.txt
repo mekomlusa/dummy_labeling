@@ -1,0 +1,3 @@
+ground_truth,example/food_samples_ground_truth_labels.csv
+faster_rcnn,example/faster_rcnn_tf_outputs.json
+ssd,example/ssd_tf_outputs.json
