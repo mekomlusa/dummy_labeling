@@ -1,0 +1,11 @@
+.alert.success {
+background-color: lightgreen;
+}
+
+.alert.error {
+background-color: red;
+}
+
+.alert.warning {
+background-color: lightyellow;
+}

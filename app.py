@@ -6,13 +6,14 @@ import csv
 import argparse
 import ujson
 
-from flask import Flask, redirect, url_for, request
+from flask import Flask, redirect, url_for, request, flash
 from flask import render_template
 from flask import send_file
 import pandas as pd
 from pathlib import Path
 
 app = Flask(__name__)
+app.secret_key = os.urandom(24)
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
 @app.route('/tagger')
@@ -22,9 +23,18 @@ def tagger():
     directory = app.config['IMAGES']
     image = app.config["FILES"][app.config["HEAD"]]
 
-    render_saved_labels(app.config['SELECTED_LABEL_ENGINE'])
+    if not app.config["EDITING"]:
+        labels = render_saved_labels(app.config['SELECTED_LABEL_ENGINE'])
+        app.config["LABELS"] = labels
+        # if len(render_saved_labels('confirmed')) == 0:
+        #     app.config["LABELS"] = labels
+        # else:
+        #     #app.config['SELECTED_LABEL_ENGINE'] = 'confirmed'
+        #     app.config["LABELS"] = render_saved_labels('confirmed')
+    else:
+        #app.config['SELECTED_LABEL_ENGINE'] = 'confirmed'
+        labels = app.config["LABELS"]
 
-    labels = app.config["LABELS"]
     not_end = not(app.config["HEAD"] == len(app.config["FILES"]) - 1)
     not_start = not (app.config["HEAD"] == 0)
     grount_truth_label = app.config["IMAGE_SETTINGS"]['ground_truth'][image]
@@ -92,6 +102,14 @@ def savenew():
         saved_output = pd.read_csv(app.config["OUT"])
         labels_without_this_image = saved_output[saved_output['image'] != image]
         labels_without_this_image.to_csv(app.config["OUT"], index=False)
+
+    if app.config['SELECTED_LABEL_ENGINE'] != 'confirmed':
+        flash('Changes saved. Switch to the "confirmed" option to see saved labels.', 'success')
+    else:
+        flash('Saved successfully!', 'success')
+
+    app.config["EDITING"] = False
+
     return redirect(url_for('tagger'))
 
 # modify labels route
@@ -107,6 +125,13 @@ def modify():
     labels_without_this_image = labels_without_this_image.sort_values(by=['id', 'image'], ascending=[True, False])
     labels_without_this_image.to_csv(app.config["OUT"], index=False)
 
+    if app.config['SELECTED_LABEL_ENGINE'] != 'confirmed':
+        flash('Changes saved. Switch to the "confirmed" option to see saved labels.', 'success')
+    else:
+        flash('Saved successfully!', 'success')
+
+    app.config["EDITING"] = False
+
     return redirect(url_for('tagger'))
 
 @app.route("/selected_label_method", methods=['POST', 'GET'])
@@ -120,6 +145,11 @@ def selected_label_method():
 
 @app.route('/add/<id>')
 def add(id):
+    app.config["EDITING"] = True
+    if app.config['SELECTED_LABEL_ENGINE'] != 'confirmed':
+        flash('Sorry, you are not allowed to draw new bounding boxes in this mode.', 'warning')
+        return redirect(url_for('tagger'))
+
     xMin = request.args.get("xMin")
     xMax = request.args.get("xMax")
     yMin = request.args.get("yMin")
@@ -129,7 +159,7 @@ def add(id):
 
 @app.route('/remove/<id>')
 def remove(id):
-    #app.config["REMOVING"] = True
+    app.config["EDITING"] = True
     index = int(id) - 1
     del app.config["LABELS"][index]
     for label in app.config["LABELS"][index:]: # reindex for display
@@ -139,6 +169,7 @@ def remove(id):
 
 @app.route('/label/<id>')
 def label(id):
+    app.config["EDITING"] = True
     name = request.args.get("name")
     app.config["LABELS"][int(id) - 1]["name"] = name
     return redirect(url_for('tagger'))
@@ -164,14 +195,14 @@ def read_pre_label_files(config_path):
 
 def render_saved_labels(choice):
     image = app.config["FILES"][app.config["HEAD"]]
-    app.config["LABELS"] = []
+    saved_labels_list = []
 
     if choice == 'confirmed':
         saved_output = pd.read_csv(app.config["OUT"])
         past_labels = saved_output[saved_output['image'] == image]
         if len(past_labels) > 0:
-            for index, row in past_labels.iterrows():
-                app.config["LABELS"].append({"id": str(row['id']), "name": str(row['name']), "xMin": str(row['xMin']),
+            for _, row in past_labels.iterrows():
+                saved_labels_list.append({"id": str(row['id']), "name": str(row['name']), "xMin": str(row['xMin']),
                                             "xMax": str(row['xMax']), "yMin": str(row['yMin']), "yMax": str(row['yMax'])})
     else: # tested for tf-hub OD API output. See accompanied notebook for more info. Adapted for your case.
         preset_labels = app.config["IMAGE_SETTINGS"][choice]
@@ -182,9 +213,9 @@ def render_saved_labels(choice):
                 xMax = str(past_labels['detection_boxes'][i][3] * past_labels['image_size'][0]) 
                 yMin = str(past_labels['detection_boxes'][i][0] * past_labels['image_size'][1]) 
                 yMax = str(past_labels['detection_boxes'][i][2] * past_labels['image_size'][1])
-                app.config["LABELS"].append({"id": str(i+1), "name": past_labels['detection_class_entities'][i], "xMin": xMin,
+                saved_labels_list.append({"id": str(i+1), "name": past_labels['detection_class_entities'][i], "xMin": xMin,
                                             "xMax": xMax, "yMin": yMin, "yMax": yMax})
-
+    return saved_labels_list
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -196,6 +227,7 @@ if __name__ == "__main__":
     app.config["LABELS"] = []
     app.config["HEAD"] = 0
     app.config["FILES"] = []
+    app.config["EDITING"] = False
 
     directory = args.dir
     if directory[len(directory) - 1] != "/":
