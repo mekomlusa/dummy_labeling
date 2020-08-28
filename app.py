@@ -52,36 +52,11 @@ def tagger():
 def next():
     # load next image & existing labels
     app.config["HEAD"] = app.config["HEAD"] + 1
-
-    # image = app.config["FILES"][app.config["HEAD"]]
-
-    # saved_output = pd.read_csv(app.config["OUT"])
-    # past_labels = saved_output[saved_output['image'] == image]
-
-    # if len(past_labels) > 0:
-    #     app.config["LABELS"] = []
-    #     for index, row in past_labels.iterrows():
-    #         app.config["LABELS"].append({"id": str(row['id']), "name": str(row['name']), "xMin": str(row['xMin']),
-    #                                      "xMax": str(row['xMax']), "yMin": str(row['yMin']), "yMax": str(row['yMax'])})
-    # else:
-    #     app.config["LABELS"] = []
-
     return redirect(url_for('tagger'))
 
 @app.route('/prev')
 def prev():
     app.config["HEAD"] = app.config["HEAD"] - 1
-
-    #app.config["LABELS"] = [] # clear existing labels
-
-    # restore labels
-    # image = app.config["FILES"][app.config["HEAD"]]
-    # saved_output = pd.read_csv(app.config["OUT"])
-    # past_labels = saved_output[saved_output['image'] == image]
-    # if len(past_labels) > 0:
-    #     for index, row in past_labels.iterrows():
-    #         app.config["LABELS"].append({"id": str(row['id']), "name": str(row['name']), "xMin": str(row['xMin']),
-    #                                      "xMax": str(row['xMax']), "yMin": str(row['yMin']), "yMax": str(row['yMax'])})
     return redirect(url_for('tagger'))
 
 # newly saved route
@@ -181,6 +156,10 @@ def images(f):
 
 # non app route methods
 def read_pre_label_files(config_path):
+    '''
+    Read configuration file in. It is expected to be similar to `sample_config.txt`. 
+    Note that "ground_truth" is a reserved keyword in the config file.
+    '''
     res_dict = {}
 
     assert (os.path.isfile(config_path)), 'ERROR: config file not found.'
@@ -194,6 +173,9 @@ def read_pre_label_files(config_path):
     return res_dict
 
 def render_saved_labels(choice):
+    """
+    Render saved labels from json/csv as per choice indicated. Choice will be the keys from the config file.
+    """
     image = app.config["FILES"][app.config["HEAD"]]
     saved_labels_list = []
 
@@ -246,7 +228,6 @@ if __name__ == "__main__":
         exit()
     app.config["FILES"] = files
 
-    # if args.config is not None:
     config_setting = read_pre_label_files(args.config)
     inflated_configs = {} # expand config setting
 
