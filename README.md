@@ -10,14 +10,14 @@ What differentiates this tool from the simple image annotator: once outputs from
 I need to train a model that could automatically detect food on an uploaded image. However, there is no open sourced food image datasets for the object detection task. There are a handful of food images for classification, though. So why don't we use best of the both worlds: **classification labels** provided as ground truths, and **bounding boxes** from pre-trained object detection models? Then, I just need the best bounding box and assign it with the ground truth label.
 
 *Load outputs from SSD result, select & Save*
-![ssd1](./ssd1.png)
+![ssd1](./ssd1.PNG)
 
 *Saved results*
-![result](./confirmed.png)
+![result](./confirmed.PNG)
 
 ## Process Workflow
 
-![workflow](./workflow.png)
+![workflow](./workflow.PNG)
 
 To see how bounding boxes and ground truth labels are obtained, refer to the notebook under `data_prep`. Note: the notebook only shows one way. You are more than welcome to use your own ground truth labels and model output files, but if so you might need to tweak the code (mainly `app.py`) a bit.
 
