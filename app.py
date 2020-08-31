@@ -76,6 +76,7 @@ def savenew():
     else: # remove all
         saved_output = pd.read_csv(app.config["OUT"])
         labels_without_this_image = saved_output[saved_output['image'] != image]
+        labels_without_this_image = labels_without_this_image.reset_index(drop=True)
         labels_without_this_image.to_csv(app.config["OUT"], index=False)
 
     if app.config['SELECTED_LABEL_ENGINE'] != 'confirmed':
@@ -93,11 +94,12 @@ def modify():
     image = app.config["FILES"][app.config["HEAD"]]
     saved_output = pd.read_csv(app.config["OUT"])
     labels_without_this_image = saved_output[saved_output['image'] != image].copy(deep=True)
-    current_df_len = len(labels_without_this_image)
+    labels_without_this_image = labels_without_this_image.reset_index(drop=True)
+
+    current_df_len = len(labels_without_this_image) + 1
     for i in range(len(app.config["LABELS"])):
         labels_without_this_image.loc[current_df_len + i] = [image] + list(app.config["LABELS"][i].values())
 
-    labels_without_this_image = labels_without_this_image.sort_values(by=['id', 'image'], ascending=[True, False])
     labels_without_this_image.to_csv(app.config["OUT"], index=False)
 
     if app.config['SELECTED_LABEL_ENGINE'] != 'confirmed':
@@ -154,6 +156,22 @@ def images(f):
     images = app.config['IMAGES']
     return send_file(images + f)
 
+@app.route('/clearall')
+def clearall():
+    app.config["LABELS"] = []
+
+    image = app.config["FILES"][app.config["HEAD"]]
+    saved_output = pd.read_csv(app.config["OUT"])
+
+    if image in saved_output['image'].values:
+        labels_without_this_image = saved_output[saved_output['image'] != image]
+        labels_without_this_image = labels_without_this_image.reset_index(drop=True)
+        labels_without_this_image.to_csv(app.config["OUT"], index=False)
+        flash('Cleared all successfully!', 'success')
+        #app.config["EDITING"] = False
+
+    return redirect(url_for('tagger'))
+
 # non app route methods
 def read_pre_label_files(config_path):
     '''
@@ -183,6 +201,7 @@ def render_saved_labels(choice):
         saved_output = pd.read_csv(app.config["OUT"])
         past_labels = saved_output[saved_output['image'] == image]
         if len(past_labels) > 0:
+            past_labels = past_labels.sort_values(by=['id', 'image'], ascending=[True, False])
             for _, row in past_labels.iterrows():
                 saved_labels_list.append({"id": str(row['id']), "name": str(row['name']), "xMin": str(row['xMin']),
                                             "xMax": str(row['xMax']), "yMin": str(row['yMin']), "yMax": str(row['yMax'])})

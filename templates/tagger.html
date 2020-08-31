@@ -61,6 +61,10 @@
                 {% endfor %}
             </div>
 
+            {% if (selected_label_method == 'confirmed') and (has_label) %}
+            <a href="/clearall" class="btn btn-primary" style="float:left;margin-right: 0.5em;" type="button"> Clear All
+              <span class="glyphicon glyphicon-remove"></span></a>
+            {% endif %}
             {% if has_label %}
             <a href="/modify" class="btn btn-primary" style="float:left;" type="button"> Save
             <span class="glyphicon glyphicon-ok"></span></a>
