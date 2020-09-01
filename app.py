@@ -251,13 +251,16 @@ if __name__ == "__main__":
     inflated_configs = {} # expand config setting
 
     for key, val in config_setting.items():
+        # need absolute file path to load
+        abs_file_path = val if os.path.isabs(val) else os.path.join(os.path.dirname(args.config), val)
+
         if key == 'ground_truth': # reserved keyword
-            with open(config_setting[key], mode='r') as infile:
+            with open(abs_file_path, mode='r') as infile:
                 reader = csv.reader(infile)
                 ground_truth_labels_dict = {rows[0]:rows[1] for rows in reader}
             inflated_configs[key] = ground_truth_labels_dict
         else: # everything else is expected to be json
-            with open(config_setting[key], 'r') as fp:
+            with open(abs_file_path, 'r') as fp:
                 inflated_configs[key] = ujson.loads(fp.read()) 
             # temp_df = pd.read_csv(config_setting[key]) # old df setting
             # inflated_configs[key] = temp_df
@@ -268,6 +271,8 @@ if __name__ == "__main__":
     if args.out == None:
         app.config["OUT"] = "out.csv"
     else:
+        filename = Path(args.out)
+        filename.touch(exist_ok=True) 
         app.config["OUT"] = args.out
 
     if not os.path.exists(app.config["OUT"]):
