@@ -34,7 +34,7 @@ def convert_outputs_to_detectron2_format(output_csv, dir_base_path):
     out_json[k]['image_id'] = index
     index += 1
 
-  return list(out_json.values())
+  return out_json #list(out_json.values())
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
