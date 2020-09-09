@@ -275,7 +275,7 @@ if __name__ == "__main__":
         filename.touch(exist_ok=True) 
         app.config["OUT"] = args.out
 
-    if not os.path.exists(app.config["OUT"]):
+    if (not os.path.exists(app.config["OUT"])) or (os.stat(app.config["OUT"]).st_size == 0):
         with open(app.config["OUT"],'w') as f:
             f.write("image,id,name,xMin,xMax,yMin,yMax\n")
 

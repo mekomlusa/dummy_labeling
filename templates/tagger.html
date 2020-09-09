@@ -111,18 +111,19 @@
       var labels = {{ labels|tojson|safe }};
       var c = document.getElementById("canvas");
       var ctx = c.getContext("2d");
-      var drawLabels = function(id, xMin, xMax, yMin, yMax, name = null) {
-        ctx.strokeStyle = "pink";
-        ctx.fillStyle = "pink";
+      var drawLabels = function(id, xMin, xMax, yMin, yMax, color, name = null) {
+        ctx.beginPath();
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
         ctx.rect(xMin, yMin, xMax - xMin, yMax - yMin);
         ctx.lineWidth="3";
+        ctx.font = "20px Arial";
         ctx.stroke();
-        ctx.font = "30px Arial";
         if (!name){
             ctx.fillText("label: " + name, xMin, yMin);
         }
         else {
-            ctx.fillText("id: " + id, xMin, yMin);
+            ctx.fillText("id: " + id + ', name: ' + name, xMin, yMin);
         }
       };
       var image = new Image();
@@ -135,7 +136,9 @@
         ctx.drawImage(image, 0, 0);
         console.log(labels);
         for (i = 0; i < labels.length; i++){
-            drawLabels(labels[i].id, labels[i].xMin, labels[i].xMax, labels[i].yMin, labels[i].yMax, labels[i].name);
+            var randNum = Math.floor(Math.random()*16777215).toString(16);
+            var randColor = "#" + randNum;
+            drawLabels(labels[i].id, labels[i].xMin, labels[i].xMax, labels[i].yMin, labels[i].yMax, randColor, labels[i].name);
         }
       };
       image.style.display="block";
