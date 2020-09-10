@@ -34,7 +34,7 @@ def tagger():
     else:
         #app.config['SELECTED_LABEL_ENGINE'] = 'confirmed'
         labels = app.config["LABELS"]
-
+        
     not_end = not(app.config["HEAD"] == len(app.config["FILES"]) - 1)
     not_start = not (app.config["HEAD"] == 0)
     grount_truth_label = app.config["IMAGE_SETTINGS"]['ground_truth'][image]
@@ -58,6 +58,17 @@ def next():
 def prev():
     app.config["HEAD"] = app.config["HEAD"] - 1
     return redirect(url_for('tagger'))
+
+@app.route('/jumpto', methods=['POST', 'GET'])
+def jumpto():
+    if request.method == "POST":            
+        numPic = int(request.form['numPic'])
+        if numPic > len(app.config["FILES"]) or numPic < 1:
+            flash('You have entered a number that is out of range. Please try again.', 'danger')
+            return redirect(url_for('tagger'))
+
+        app.config["HEAD"] = numPic - 1 #actually starts from 0, display starts from 1
+        return redirect(url_for('tagger'))
 
 # newly saved route
 @app.route('/savenew')

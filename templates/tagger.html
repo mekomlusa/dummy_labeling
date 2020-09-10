@@ -105,35 +105,43 @@
         </div>
         {% endfor %}
         <canvas id="canvas" style="margin: 0; padding: 0;"></canvas> <!--width:100%; height:100%;-->
+
+        <form action= "{{ url_for('jumpto') }}" method="POST">
+          <label for="numPic">Jump to: (between 1 and {{ len }})</label>
+          <input type="number" id="numPic" name="numPic" min="1" max="{{ len }}" value="{{ head }}" onchange='this.form.submit()'>
+          <input type="submit" hidden="true">
+        </form>
+
     </div>
     
     <script>
       var labels = {{ labels|tojson|safe }};
       var c = document.getElementById("canvas");
       var ctx = c.getContext("2d");
+      var offset = 0; // to show labels on the edge correctly
       var drawLabels = function(id, xMin, xMax, yMin, yMax, color, name = null) {
         ctx.beginPath();
         ctx.strokeStyle = color;
         ctx.fillStyle = color;
-        ctx.rect(xMin, yMin, xMax - xMin, yMax - yMin);
+        ctx.rect(parseFloat(xMin)+offset, parseFloat(yMin)+offset, xMax - xMin, yMax - yMin);
         ctx.lineWidth="3";
         ctx.font = "20px Arial";
         ctx.stroke();
         if (!name){
-            ctx.fillText("label: " + name, xMin, yMin);
+            ctx.fillText("label: " + name, parseFloat(xMin)+offset, parseFloat(yMin)+offset);
         }
         else {
-            ctx.fillText("id: " + id + ', name: ' + name, xMin, yMin);
+            ctx.fillText("id: " + id + ', name: ' + name, parseFloat(xMin)+offset, parseFloat(yMin)+offset);
         }
       };
       var image = new Image();
       console.log(image);
       image.onload = function(e) {
-        ctx.canvas.width = image.width;
-        ctx.canvas.height = image.height;
-        c.width = image.width;
-        c.height = image.height;
-        ctx.drawImage(image, 0, 0);
+        ctx.canvas.width = image.width + offset;
+        ctx.canvas.height = image.height + offset;
+        c.width = image.width + offset;
+        c.height = image.height + offset;
+        ctx.drawImage(image, offset, offset);
         console.log(labels);
         for (i = 0; i < labels.length; i++){
             var randNum = Math.floor(Math.random()*16777215).toString(16);
@@ -182,6 +190,10 @@
               yMax = fPoint.y;
               yMin = y;
             }
+            xMin -= offset;
+            xMax -= offset;
+            yMin -= offset;
+            yMax -= offset;
             fPoint = {};
             window.location.replace("/add/" + (labels.length + 1) +
             "?xMin=" + xMin +
